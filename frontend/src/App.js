@@ -1,26 +1,53 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState, useRef } from "react";
+import axios from "axios";
+import "./App.css";
 
-function App() {
+const App = () => {
+  const [polling, setPolling] = useState(true);
+  const [prices, setPrices] = useState([]);
+  const timer = useRef(null);
+
+  useEffect(() => {
+    if (polling) {
+      timer.current = setInterval(() => getPrices(), 100);
+    } else {
+      clearTimer();
+    }
+
+    return clearTimer;
+  }, [polling]);
+
+  const clearTimer = () => {
+    if (timer.current) {
+      clearInterval(timer.current);
+      timer.current = null;
+    }
+  };
+
+  const getPrices = async () => {
+    const results = await axios.get("http://localhost:81/api/values/50000");
+    console.log(results);
+    setPrices(results.data);
+  };
+
+  const togglePolling = () => {
+    setPolling(!polling);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        <div>
+          {prices.slice(0, 5).map(num => {
+            return <h1>{num}</h1>;
+          })}
+        </div>
+        <div>
+          <button onClick={togglePolling}>{polling ? `Stop` : `Start`}</button>
+        </div>
       </header>
     </div>
   );
-}
+};
 
 export default App;

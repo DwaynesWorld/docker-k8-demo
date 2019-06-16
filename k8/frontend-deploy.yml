@@ -1,10 +1,10 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name:  demo-frontend-service
+  name:  frontend-service
 spec:
   selector:
-    app:  demo-frontend
+    app:  frontend
   type:  LoadBalancer
   ports:
   - protocol: TCP
@@ -14,21 +14,20 @@ spec:
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: demo-frontend-deployment
+  name: frontend-deployment
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: demo-frontend
+      app: frontend
   template:
     metadata:
       labels:
-        app: demo-frontend
+        app: frontend
     spec:
       containers:
       - name: frontend
-        image: frontend:latest
-        imagePullPolicy: Never
+        image: frontend:v1
         resources:
           limits:
             memory: "128Mi"
@@ -36,10 +35,12 @@ spec:
         ports:
         - containerPort: 80
         livenessProbe:
+          initialDelaySeconds: 30
           httpGet:
             path: /
             port: 80
         readinessProbe:
+          initialDelaySeconds: 30
           httpGet:
             path: /
             port: 80
