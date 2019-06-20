@@ -13,7 +13,7 @@ RUN yarn
 COPY . /app
 RUN yarn build
 
-FROM nginx:1.16.0-alpine
+FROM nginx:1.16.0-alpine as final
 # Update nginx configuration
 RUN rm /etc/nginx/conf.d/default.conf
 COPY frontend.conf /etc/nginx/conf.d

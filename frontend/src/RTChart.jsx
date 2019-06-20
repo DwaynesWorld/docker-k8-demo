@@ -1,5 +1,6 @@
 import React from "react";
 import Ring from "ringjs";
+import axios from "axios";
 
 import {
   TimeSeries,
@@ -26,10 +27,10 @@ import {
 const sec = 1000;
 const minute = 60 * sec;
 const hours = 60 * minute;
-const rate = 80;
+const rate = 125;
 
-class RealtimeChart extends React.Component {
-  static displayName = "AggregatorDemo";
+class RealTimeChart extends React.Component {
+  static displayName = "Demo";
 
   state = {
     time: new Date(),
@@ -38,10 +39,26 @@ class RealtimeChart extends React.Component {
     percentile90Out: new Ring(100)
   };
 
-  // switch to api call
-  getNewEvent = t => {
-    const base = Math.sin(t.getTime() / 10000000) * 350 + 500;
-    return new TimeEvent(t, parseInt(base + Math.random() * 1000, 10));
+  getEvents = async () => {
+    const t = new Date(this.state.time.getTime() + minute);
+    const timeEvent = await this.fetchNewEvent(t);
+
+    // Raw events
+    const newEvents = this.state.events;
+    newEvents.push(timeEvent);
+    this.setState({ time: t, events: newEvents });
+
+    // Let our aggregators process the event
+    this.stream.addEvent(timeEvent);
+  };
+
+  fetchNewEvent = async t => {
+    const unix = t.getTime();
+    const url = `http://localhost:81/api/events/${unix}`;
+    const results = await axios.get(url);
+
+    const timeEvent = new TimeEvent(t, results.data);
+    return timeEvent;
   };
 
   componentDidMount() {
@@ -73,19 +90,7 @@ class RealtimeChart extends React.Component {
         this.setState({ percentile50Out: events });
       });
 
-    const increment = minute;
-    this.interval = setInterval(() => {
-      const t = new Date(this.state.time.getTime() + increment);
-      const event = this.getNewEvent(t);
-
-      // Raw events
-      const newEvents = this.state.events;
-      newEvents.push(event);
-      this.setState({ time: t, events: newEvents });
-
-      // Let our aggregators process the event
-      this.stream.addEvent(event);
-    }, rate);
+    this.interval = setInterval(() => this.getEvents(), rate);
   }
 
   componentWillUnmount() {
@@ -114,17 +119,17 @@ class RealtimeChart extends React.Component {
 
     const eventSeries = new TimeSeries({
       name: "raw",
-      events: this.state.events.toArray()
+      events: this.state.events.toArray().sort()
     });
 
     const perc50Series = new TimeSeries({
       name: "five minute perc50",
-      events: this.state.percentile50Out.toArray()
+      events: this.state.percentile50Out.toArray().sort()
     });
 
     const perc90Series = new TimeSeries({
       name: "five minute perc90",
-      events: this.state.percentile90Out.toArray()
+      events: this.state.percentile90Out.toArray().sort()
     });
 
     const initialBeginTime = new Date(2015, 0, 1);
@@ -219,5 +224,4 @@ class RealtimeChart extends React.Component {
   }
 }
 
-// Export example
-export default { RealtimeChart };
+export default RealTimeChart;
